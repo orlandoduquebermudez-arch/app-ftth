@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyB3xUlT0Oue5B_yc44ZphiXLesjQ5CtEz8",
+  apiKey: "AIzaSyB3xUlT0Oue5B_yc44ZphiXNesjQ5CtEz8",
   authDomain: "app-cable-next.firebaseapp.com",
   projectId: "app-cable-next",
   storageBucket: "app-cable-next.firebasestorage.app",
@@ -11,17 +11,22 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const colOrdenes = db.collection('ordenes');
+const usuariosRef = db.collection('usuarios');
+const ordenesRef = db.collection('ordenes');
 
-const SESSION='ftth_empresa_v1_session';
 const campos=['fecha','hora','orden','tecnico','cedula','cliente','telefono','direccion','zona','tipo','estado','resultado','serial','mac','potencia','puerto','cto','puertoCto','fibra','gps','observaciones'];
 let ordenes=[];
-let session=JSON.parse(localStorage.getItem(SESSION)||'null');
-let fotoActual='', firmaActual='', unsubscribeOrdenes=null;
+let session=null;
+let unsubscribeOrdenes=null;
+let fotoActual='', firmaActual='';
 const $=id=>document.getElementById(id);
 
-function saveSession(){localStorage.setItem(SESSION,JSON.stringify(session))}
-function ordenAuto(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `FTTH-${y}${m}${day}-${String(ordenes.length+1).padStart(4,'0')}`}
+function normRol(rol){
+  const r=String(rol||'').toLowerCase();
+  if(r.includes('admin')) return 'Administrador';
+  if(r.includes('super')) return 'Supervisor';
+  return 'Técnico';
+}
 function showViews(){
   $('loginView').classList.toggle('hidden',!!session);
   $('btnSalir').classList.toggle('hidden',!session);
@@ -32,46 +37,62 @@ function showViews(){
   else $('supervisorView').classList.remove('hidden');
   render();
 }
+function setBusy(b){ $('btnLogin').disabled=!!b; $('btnLogin').textContent=b?'Entrando...':'Entrar'; }
 async function login(){
-  const email=$('loginUser').value.trim();
-  const pass=$('loginPass').value;
+  const email=$('loginEmail').value.trim().toLowerCase();
+  const pass=$('loginPassword').value;
   if(!email||!pass){alert('Digite correo y contraseña');return}
-  try{
-    const cred=await auth.signInWithEmailAndPassword(email,pass);
-    const nombre=email.split('@')[0];
-    session={uid:cred.user.uid,email,user:nombre,rol:$('loginRol').value};
-    saveSession();
-    escucharOrdenes();
-    showViews();
-  }catch(e){alert('No se pudo ingresar: '+e.message)}
+  try{ setBusy(true); await auth.signInWithEmailAndPassword(email,pass); }
+  catch(e){ alert('No se pudo ingresar: '+(e.message||e.code)); }
+  finally{ setBusy(false); }
 }
-async function salir(){
-  if(unsubscribeOrdenes)unsubscribeOrdenes();
-  await auth.signOut();
-  localStorage.removeItem(SESSION);session=null;ordenes=[];showViews();
+async function salir(){ await auth.signOut(); }
+async function cargarPerfil(user){
+  const email=(user.email||'').toLowerCase();
+  const doc=await usuariosRef.doc(email).get();
+  if(!doc.exists){
+    alert('Este correo no tiene rol en Firestore. Cree un documento en usuarios con ID: '+email);
+    await auth.signOut(); return;
+  }
+  const data=doc.data()||{};
+  if(data.activo===false){ alert('Usuario inactivo.'); await auth.signOut(); return; }
+  session={email,user:data.nombre||email,rol:normRol(data.rol)};
+  escucharOrdenes();
+  showViews();
 }
 function escucharOrdenes(){
-  if(unsubscribeOrdenes)unsubscribeOrdenes();
-  unsubscribeOrdenes=colOrdenes.onSnapshot(snap=>{
+  if(unsubscribeOrdenes) unsubscribeOrdenes();
+  unsubscribeOrdenes=ordenesRef.onSnapshot(snap=>{
     ordenes=snap.docs.map(d=>({id:d.id,...d.data()}));
     render();
-  },err=>alert('Error leyendo órdenes: '+err.message));
+  },err=>alert('Error leyendo Firestore: '+err.message));
 }
-function crearOrdenRapida(){const ced=$('cedulaRapida').value.trim();if(!ced){alert('Digite la cédula');return}limpiarForm();$('formSection').classList.remove('hidden');$('orden').value=ordenAuto();$('fecha').valueAsDate=new Date();$('hora').value=new Date().toTimeString().slice(0,5);$('tecnico').value=session.user;$('cedula').value=ced;$('estado').value='En proceso';$('resultado').value='Sin cerrar';}
+function ordenAuto(){
+  const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return `FTTH-${y}${m}${day}-${String(ordenes.length+1).padStart(4,'0')}`;
+}
+function crearOrdenRapida(){const ced=$('cedulaRapida').value.trim();if(!ced){alert('Digite la cédula');return}limpiarForm();$('formSection').classList.remove('hidden');$('orden').value=ordenAuto();$('fecha').valueAsDate=new Date();$('tecnico').value=session.user;$('cedula').value=ced;$('estado').value='En proceso';$('resultado').value='Sin cerrar';}
 function limpiarForm(){document.getElementById('ordenForm').reset();$('editId').value='';fotoActual='';firmaActual='';$('fotoPreview').innerHTML='';limpiarFirma()}
-function leerForm(){const d={};campos.forEach(c=>d[c]=$(c).value.trim());d.foto=fotoActual;d.firma=obtenerFirma();d.actualizado=new Date().toISOString();d.uid=session?.uid||'';d.email=session?.email||'';return d}
+function leerForm(){const d={};campos.forEach(c=>d[c]=$(c).value.trim());d.foto=fotoActual;d.firma=obtenerFirma();d.actualizado=new Date().toISOString();d.creadoPorEmail=session?.email||'';d.tecnicoEmail=session?.rol==='Técnico'?session.email:(d.tecnicoEmail||'');return d}
 async function guardarOrden(e){
-  e.preventDefault();const d=leerForm();if(!d.tipo){alert('Seleccione tipo de instalación');return}
+  e.preventDefault();
+  const d=leerForm();
+  if(!d.tipo){alert('Seleccione tipo de instalación');return}
   try{
-    const editId=$('editId').value;
-    if(editId) await colOrdenes.doc(editId).set(d,{merge:true});
-    else await colOrdenes.add({...d,creado:new Date().toISOString()});
+    if($('editId').value){
+      await ordenesRef.doc($('editId').value).set({...d},{merge:true});
+    }else{
+      d.creado=new Date().toISOString();
+      await ordenesRef.add(d);
+    }
     $('formSection').classList.add('hidden');$('cedulaRapida').value='';limpiarForm();
-  }catch(err){alert('Error guardando orden: '+err.message)}
+  }catch(e){alert('No se pudo guardar: '+e.message)}
 }
-function editar(id){const r=ordenes.find(o=>o.id===id);if(!r)return;$('formSection').classList.remove('hidden');campos.forEach(c=>$(c).value=r[c]||'');$('editId').value=r.id;fotoActual=r.foto||'';firmaActual=r.firma||'';$('fotoPreview').innerHTML=fotoActual?`<img src="${fotoActual}">`:'';cargarFirma(firmaActual);window.scrollTo({top:0,behavior:'smooth'})}
-async function borrar(id){if(!confirm('¿Borrar orden?'))return;try{await colOrdenes.doc(id).delete()}catch(e){alert('Error borrando: '+e.message)}}
+function puedeEditar(r){return session && (session.rol!=='Técnico' || r.tecnicoEmail===session.email || r.tecnico===session.user)}
+function editar(id){const r=ordenes.find(o=>o.id===id);if(!r)return;if(!puedeEditar(r)){alert('No puede editar esta orden');return}$('formSection').classList.remove('hidden');campos.forEach(c=>$(c).value=r[c]||'');$('editId').value=r.id;fotoActual=r.foto||'';firmaActual=r.firma||'';$('fotoPreview').innerHTML=fotoActual?`<img src="${fotoActual}">`:'';cargarFirma(firmaActual);window.scrollTo({top:0,behavior:'smooth'})}
+async function borrar(id){if(session?.rol==='Técnico'){alert('Solo supervisor o administrador puede borrar');return}if(!confirm('¿Borrar orden?'))return;try{await ordenesRef.doc(id).delete()}catch(e){alert('No se pudo borrar: '+e.message)}}
 function cls(e){return(e||'').replaceAll(' ','-')}
+function misOrdenes(){return ordenes.filter(o=>o.tecnicoEmail===session.email || o.tecnico===session.user)}
 function filtroOrdenes(){
  const q=($('buscar')?.value||'').toLowerCase(), desde=$('desde')?.value||'', hasta=$('hasta')?.value||'', estado=$('filtroEstado')?.value||'', tipo=$('filtroTipo')?.value||'';
  return ordenes.filter(r=>{
@@ -80,7 +101,7 @@ function filtroOrdenes(){
  }).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
 }
 function renderTecnico(){
- const data=ordenes.filter(o=>o.tecnico===session.user || o.uid===session.uid);
+ const data=misOrdenes();
  $('tablaTecnico').innerHTML=data.length?data.map(r=>`<tr><td>${r.fecha||''}</td><td>${r.orden||''}</td><td>${r.cedula||''}</td><td>${r.tipo||''}</td><td><span class="badge ${cls(r.estado)}">${r.estado||''}</span></td><td><div class="row-actions"><button onclick="ver('${r.id}')">Ver</button><button onclick="editar('${r.id}')">Editar</button></div></td></tr>`).join(''):'<tr><td colspan="6">Sin órdenes</td></tr>';
 }
 function renderSupervisor(){
@@ -107,14 +128,12 @@ function descargar(contenido,nombre,tipo){const b=new Blob([contenido],{type:tip
 function limpiarTexto(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function excel(){
  const headers=[['fecha','Fecha'],['hora','Hora'],['orden','Orden'],['tecnico','Técnico'],['cedula','Cédula'],['cliente','Cliente'],['telefono','Teléfono'],['direccion','Dirección'],['zona','Zona'],['tipo','Tipo instalación'],['estado','Estado'],['resultado','Resultado técnico'],['serial','Serial ONU'],['mac','MAC'],['potencia','Potencia RX'],['puerto','Puerto OLT/PON'],['cto','CTO/Caja'],['puertoCto','Puerto CTO'],['fibra','Metros fibra'],['gps','GPS'],['observaciones','Observaciones'],['foto','Tiene foto'],['firma','Tiene firma']];
- const data=filtroOrdenes();let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>';headers.forEach(h=>html+=`<th>${h[1]}</th>`);html+='</tr></thead><tbody>';
- data.forEach(r=>{html+='<tr>';headers.forEach(([key])=>{let val='';if(key==='foto') val=r.foto?'Sí':'No';else if(key==='firma') val=r.firma?'Sí':'No';else val=r[key]||'';html+=`<td>${limpiarTexto(val)}</td>`;});html+='</tr>';});
- html+='</tbody></table></body></html>';descargar(html,'reporte_ftth_empresa.xls','application/vnd.ms-excel;charset=utf-8;');
+ const data=filtroOrdenes();let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>';headers.forEach(h=>html+=`<th>${h[1]}</th>`);html+='</tr></thead><tbody>';data.forEach(r=>{html+='<tr>';headers.forEach(([key])=>{let val='';if(key==='foto') val=r.foto?'Sí':'No';else if(key==='firma') val=r.firma?'Sí':'No';else val=r[key]||'';html+=`<td>${limpiarTexto(val)}</td>`});html+='</tr>'});html+='</tbody></table></body></html>';descargar(html,'reporte_ftth_empresa.xls','application/vnd.ms-excel;charset=utf-8;')
 }
 function backup(){descargar(JSON.stringify(ordenes,null,2),'respaldo_ftth_empresa.json','application/json')}
-async function importar(file){const rd=new FileReader();rd.onload=async e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error();for(const r of data){const {id,...doc}=r; await colOrdenes.add(doc)}alert('Importado correctamente')}catch{alert('Archivo inválido')}};rd.readAsText(file)}
+async function importar(file){const rd=new FileReader();rd.onload=async e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error();const batch=db.batch();data.forEach(o=>{const id=o.id||ordenesRef.doc().id;const ref=ordenesRef.doc(id);delete o.id;batch.set(ref,o,{merge:true})});await batch.commit();alert('Importado correctamente')}catch{alert('Archivo inválido')}};rd.readAsText(file)}
 $('btnLogin').onclick=login;$('btnSalir').onclick=salir;$('btnCrearOrden').onclick=crearOrdenRapida;$('ordenForm').onsubmit=guardarOrden;$('btnCancelar').onclick=()=>{$('formSection').classList.add('hidden');limpiarForm()};$('btnGPS').onclick=tomarGPS;$('fotoInput').onchange=e=>{if(e.target.files[0])foto(e.target.files[0])};$('btnLimpiarFirma').onclick=limpiarFirma;$('cerrarModal').onclick=()=>$('modal').classList.add('hidden');
 ['mousedown','touchstart'].forEach(ev=>canvas.addEventListener(ev,start));['mousemove','touchmove'].forEach(ev=>canvas.addEventListener(ev,move));['mouseup','mouseleave','touchend'].forEach(ev=>canvas.addEventListener(ev,end));
 ['buscar','desde','hasta','filtroEstado','filtroTipo'].forEach(id=>$(id)?.addEventListener('input',render));
 $('btnExcel')?.addEventListener('click',excel);$('btnBackup')?.addEventListener('click',backup);$('importJson')?.addEventListener('change',e=>{if(e.target.files[0])importar(e.target.files[0])});
-auth.onAuthStateChanged(user=>{if(user){if(!session){session={uid:user.uid,email:user.email,user:user.email.split('@')[0],rol:'Técnico'};saveSession()}escucharOrdenes();}else{session=null;localStorage.removeItem(SESSION)}showViews();});
+auth.onAuthStateChanged(user=>{ if(user) cargarPerfil(user); else {session=null; ordenes=[]; if(unsubscribeOrdenes) unsubscribeOrdenes(); showViews();} });
