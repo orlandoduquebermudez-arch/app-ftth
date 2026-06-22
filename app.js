@@ -1,11 +1,12 @@
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyB3xUlT0Oue5B_yc44ZphiXNesjQ5CtEz8",
+  apiKey: "AIzaSyB3xUIT0Oue5B_yc44ZphiXNesjQ5CtEz8",
   authDomain: "app-cable-next.firebaseapp.com",
   projectId: "app-cable-next",
   storageBucket: "app-cable-next.firebasestorage.app",
   messagingSenderId: "1084922439923",
   appId: "1:1084922439923:web:518b19750cd871256daf86",
-  measurementId: "G-YBGS8LOL10"
+  measurementId: "G-YBGS8L0L10"
 };
 
 firebase.initializeApp(firebaseConfig);
