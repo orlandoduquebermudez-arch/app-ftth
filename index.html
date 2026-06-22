@@ -3,48 +3,190 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema FTTH PWA</title>
+<title>FTTH Empresa v1</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1264d8">
+<meta name="theme-color" content="#0b5ed7">
 </head>
 <body>
 <header class="topbar">
-<div><h1>Sistema FTTH PWA</h1><p>Control de instalaciones, técnicos, evidencias y reportes.</p></div>
-<div class="top-actions">
-<button id="btnInstall" class="secondary hidden">Instalar App</button>
-<button id="btnBackup" class="secondary">Respaldo JSON</button>
-<label class="import-btn">Importar JSON <input type="file" id="importJson" accept=".json" hidden></label>
-<button id="btnPrint" class="secondary">Imprimir</button>
-</div>
+  <div>
+    <h1>FTTH Empresa v1</h1>
+    <p>20 técnicos · Órdenes por cédula · Panel supervisor</p>
+  </div>
+  <div class="top-actions">
+    <span id="usuarioLabel"></span>
+    <button id="btnSalir" class="secondary hidden">Salir</button>
+  </div>
 </header>
+
 <main class="layout">
-<section class="card"><h2>Perfil de uso</h2><div class="grid small-grid">
-<label>Usuario / Técnico activo <input id="usuarioActivo" placeholder="Nombre del técnico o administrador"></label>
-<label>Rol<select id="rolActivo"><option>Administrador</option><option>Técnico</option><option>Supervisor</option></select></label>
-<button id="btnGuardarPerfil">Guardar perfil</button>
-</div></section>
-<section class="card form-card"><h2 id="formTitle">Registrar instalación</h2><form id="formOrden"><input type="hidden" id="editId">
-<div class="grid">
-<label>Fecha <input type="date" id="fecha" required></label><label>Hora <input type="time" id="hora"></label><label>Número de orden <input type="text" id="orden" placeholder="Automático si se deja vacío"></label><label>Técnico <input type="text" id="tecnico" required></label>
-<label>Cédula del usuario <input type="text" id="cedula" required></label><label>Nombre del usuario <input type="text" id="cliente"></label><label>Teléfono <input type="tel" id="telefono"></label><label>Dirección <input type="text" id="direccion"></label>
-<label>Barrio / Zona <input type="text" id="zona"></label><label>Tipo de instalación<select id="tipo" required><option value="">Seleccione...</option><option>FTTH Multipmexada</option><option>FTTH Overload</option><option>FTTH TV</option><option>Derivación</option></select></label>
-<label>Estado<select id="estado" required><option>Pendiente</option><option>En proceso</option><option>Instalado</option><option>Reagendado</option><option>Cancelado</option><option>Con novedad</option></select></label>
-<label>Resultado técnico<select id="resultado"><option>Sin cerrar</option><option>Servicio activo</option><option>Cliente ausente</option><option>Falta señal</option><option>Falta material</option><option>Problema de ruta</option><option>No autoriza instalación</option></select></label>
-<label>Serial ONU / Equipo <input type="text" id="serial"></label><label>MAC equipo <input type="text" id="mac"></label><label>Potencia óptica RX <input type="text" id="potencia" placeholder="-20.5 dBm"></label><label>Puerto OLT / PON <input type="text" id="puerto"></label>
-<label>CTO / Caja <input type="text" id="cto"></label><label>Puerto CTO <input type="text" id="puertoCto"></label><label>Plan / Servicio <input type="text" id="plan"></label><label>Metros de fibra usados <input type="number" id="fibra" min="0"></label>
-<label>Conectores usados <input type="number" id="conectores" min="0"></label><label>Drop usado <input type="text" id="drop"></label><label>Coordenadas GPS <input type="text" id="gps" placeholder="Latitud, Longitud"></label><button type="button" id="btnGPS" class="secondary">Tomar GPS</button>
-</div>
-<label>Observaciones / Novedades<textarea id="observaciones" rows="3"></textarea></label>
-<div class="evidence-grid"><div><label>Evidencia fotográfica<input type="file" id="fotoInput" accept="image/*" capture="environment"></label><div id="fotoPreview" class="preview"></div></div><div><label>Firma del usuario</label><canvas id="firmaCanvas" width="420" height="180"></canvas><div class="actions"><button type="button" id="btnLimpiarFirma" class="secondary">Limpiar firma</button></div></div></div>
-<div class="actions"><button type="submit" id="btnGuardar">Guardar instalación</button><button type="button" id="btnCancelar" class="secondary hidden">Cancelar edición</button></div>
-</form></section>
-<section class="card"><h2>Indicadores generales</h2><div class="stats"><div><strong id="total">0</strong><span>Total</span></div><div><strong id="instaladas">0</strong><span>Instaladas</span></div><div><strong id="pendientes">0</strong><span>Pendientes</span></div><div><strong id="novedades">0</strong><span>Con novedad</span></div><div><strong id="canceladas">0</strong><span>Canceladas</span></div></div></section>
-<section class="card table-card"><div class="table-header"><h2>Órdenes registradas</h2><div class="buttons"><button id="btnCSV" class="secondary">Exportar Excel/CSV</button><button id="btnLimpiar" class="danger">Borrar todo</button></div></div>
-<div class="filters"><input id="buscar" placeholder="Buscar por orden, técnico, cédula, cliente o dirección"><input type="date" id="desde"><input type="date" id="hasta"><select id="filtroEstado"><option value="">Todos los estados</option><option>Pendiente</option><option>En proceso</option><option>Instalado</option><option>Reagendado</option><option>Cancelado</option><option>Con novedad</option></select><select id="filtroTipo"><option value="">Todos los tipos</option><option>FTTH Multipmexada</option><option>FTTH Overload</option><option>FTTH TV</option><option>Derivación</option></select></div>
-<div class="responsive-table"><table><thead><tr><th>Fecha</th><th>Orden</th><th>Técnico</th><th>Cédula</th><th>Usuario</th><th>Tipo</th><th>Estado</th><th>Resultado</th><th>Evidencia</th><th>Acciones</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
-<section class="reports"><div class="card"><h2>Resumen por tipo</h2><div id="resumenTipos" class="summary"></div></div><div class="card"><h2>Resumen por técnico</h2><div id="resumenTecnicos" class="summary"></div></div></section>
+<section id="loginView" class="card login-card">
+  <h2>Ingreso al sistema</h2>
+  <label>Usuario <input id="loginUser" placeholder="Ej: tecnico1"></label>
+  <label>Rol
+    <select id="loginRol">
+      <option>Técnico</option>
+      <option>Supervisor</option>
+      <option>Administrador</option>
+    </select>
+  </label>
+  <button id="btnLogin">Entrar</button>
+  <p class="hint">Versión local. En la versión con Firebase/MySQL aquí irá usuario y contraseña reales.</p>
+</section>
+
+<section id="tecnicoView" class="hidden">
+  <section class="card">
+    <h2>Nueva orden</h2>
+    <p>El técnico solo digita la cédula del usuario. El sistema genera la orden automáticamente.</p>
+    <div class="quick-order">
+      <label>Cédula del usuario <input id="cedulaRapida" placeholder="Digite cédula"></label>
+      <button id="btnCrearOrden">Crear orden</button>
+    </div>
+  </section>
+
+  <section id="formSection" class="card hidden">
+    <h2>Cerrar instalación</h2>
+    <form id="ordenForm">
+      <input type="hidden" id="editId">
+      <div class="grid">
+        <label>Orden automática <input id="orden" readonly></label>
+        <label>Fecha <input type="date" id="fecha" required></label>
+        <label>Hora <input type="time" id="hora"></label>
+        <label>Técnico <input id="tecnico" readonly></label>
+        <label>Cédula usuario <input id="cedula" readonly></label>
+        <label>Nombre usuario <input id="cliente"></label>
+        <label>Teléfono <input id="telefono"></label>
+        <label>Dirección <input id="direccion"></label>
+        <label>Barrio / Zona <input id="zona"></label>
+        <label>Tipo de instalación
+          <select id="tipo" required>
+            <option value="">Seleccione...</option>
+            <option>FTTH Multipmexada</option>
+            <option>FTTH Overload</option>
+            <option>FTTH TV</option>
+            <option>Derivación</option>
+          </select>
+        </label>
+        <label>Estado
+          <select id="estado">
+            <option>En proceso</option>
+            <option>Instalado</option>
+            <option>Con novedad</option>
+            <option>Reagendado</option>
+            <option>Cancelado</option>
+          </select>
+        </label>
+        <label>Resultado técnico
+          <select id="resultado">
+            <option>Sin cerrar</option>
+            <option>Servicio activo</option>
+            <option>Cliente ausente</option>
+            <option>Falta señal</option>
+            <option>Falta material</option>
+            <option>Problema de ruta</option>
+            <option>No autoriza instalación</option>
+          </select>
+        </label>
+        <label>Serial ONU <input id="serial"></label>
+        <label>MAC equipo <input id="mac"></label>
+        <label>Potencia RX <input id="potencia" placeholder="-20.5 dBm"></label>
+        <label>Puerto OLT / PON <input id="puerto"></label>
+        <label>CTO / Caja <input id="cto"></label>
+        <label>Puerto CTO <input id="puertoCto"></label>
+        <label>Metros fibra <input id="fibra" type="number" min="0"></label>
+        <label>GPS <input id="gps" readonly></label>
+        <button type="button" id="btnGPS" class="secondary">Tomar GPS</button>
+      </div>
+
+      <label>Observaciones <textarea id="observaciones" rows="3"></textarea></label>
+
+      <div class="evidence-grid">
+        <div>
+          <label>Foto evidencia <input type="file" id="fotoInput" accept="image/*" capture="environment"></label>
+          <div id="fotoPreview" class="preview"></div>
+        </div>
+        <div>
+          <label>Firma del usuario</label>
+          <canvas id="firmaCanvas" width="420" height="180"></canvas>
+          <button type="button" id="btnLimpiarFirma" class="secondary">Limpiar firma</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Guardar / Cerrar orden</button>
+        <button type="button" id="btnCancelar" class="secondary">Cancelar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Mis órdenes</h2>
+    <div class="responsive-table">
+      <table>
+        <thead><tr><th>Fecha</th><th>Orden</th><th>Cédula</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="tablaTecnico"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<section id="supervisorView" class="hidden">
+  <section class="card">
+    <h2>Panel supervisor</h2>
+    <div class="stats">
+      <div><strong id="total">0</strong><span>Total</span></div>
+      <div><strong id="instaladas">0</strong><span>Instaladas</span></div>
+      <div><strong id="proceso">0</strong><span>En proceso</span></div>
+      <div><strong id="novedades">0</strong><span>Novedad</span></div>
+      <div><strong id="canceladas">0</strong><span>Canceladas</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="table-header">
+      <h2>Todas las órdenes</h2>
+      <div class="buttons">
+        <button id="btnExcel" class="secondary">Exportar Excel limpio</button>
+        <button id="btnBackup" class="secondary">Respaldo JSON completo</button>
+        <label class="import-btn">Importar JSON <input type="file" id="importJson" accept=".json" hidden></label>
+      </div>
+    </div>
+    <div class="filters">
+      <input id="buscar" placeholder="Buscar por técnico, cédula, orden o cliente">
+      <input type="date" id="desde">
+      <input type="date" id="hasta">
+      <select id="filtroEstado">
+        <option value="">Todos los estados</option>
+        <option>En proceso</option><option>Instalado</option><option>Con novedad</option><option>Reagendado</option><option>Cancelado</option>
+      </select>
+      <select id="filtroTipo">
+        <option value="">Todos los tipos</option>
+        <option>FTTH Multipmexada</option><option>FTTH Overload</option><option>FTTH TV</option><option>Derivación</option>
+      </select>
+    </div>
+    <div class="responsive-table">
+      <table>
+        <thead><tr><th>Fecha</th><th>Orden</th><th>Técnico</th><th>Cédula</th><th>Usuario</th><th>Tipo</th><th>Estado</th><th>Evidencia</th><th>Acciones</th></tr></thead>
+        <tbody id="tablaSupervisor"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="reports">
+    <div class="card"><h2>Resumen por técnico</h2><div id="resumenTecnicos" class="summary"></div></div>
+    <div class="card"><h2>Resumen por tipo</h2><div id="resumenTipos" class="summary"></div></div>
+  </section>
+</section>
 </main>
-<div id="modal" class="modal hidden"><div class="modal-content"><button id="cerrarModal" class="danger close">Cerrar</button><div id="detalleOrden"></div></div></div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <button id="cerrarModal" class="danger close">Cerrar</button>
+    <div id="detalleOrden"></div>
+  </div>
+</div>
+
 <script src="app.js"></script>
-</body></html>
+</body>
+</html>

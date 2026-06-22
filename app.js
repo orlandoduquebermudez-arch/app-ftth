@@ -1,44 +1,97 @@
-const STORAGE_KEY='sistema_ftth_pwa_v3';
-const PERFIL_KEY='sistema_ftth_perfil';
-const campos=['fecha','hora','orden','tecnico','cedula','cliente','telefono','direccion','zona','tipo','estado','resultado','serial','mac','potencia','puerto','cto','puertoCto','plan','fibra','conectores','drop','gps','observaciones'];
-let registros=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-let fotoActual='';
-let deferredPrompt=null;
+const STORAGE='ftth_empresa_v1_ordenes';
+const SESSION='ftth_empresa_v1_session';
+const campos=['fecha','hora','orden','tecnico','cedula','cliente','telefono','direccion','zona','tipo','estado','resultado','serial','mac','potencia','puerto','cto','puertoCto','fibra','gps','observaciones'];
+let ordenes=JSON.parse(localStorage.getItem(STORAGE)||'[]');
+let session=JSON.parse(localStorage.getItem(SESSION)||'null');
+let fotoActual='', firmaActual='';
 const $=id=>document.getElementById(id);
-function guardarStorage(){localStorage.setItem(STORAGE_KEY,JSON.stringify(registros))}
-function guardarPerfil(){localStorage.setItem(PERFIL_KEY,JSON.stringify({usuario:$('usuarioActivo').value,rol:$('rolActivo').value}));alert('Perfil guardado')}
-function cargarPerfil(){const p=JSON.parse(localStorage.getItem(PERFIL_KEY)||'{}');$('usuarioActivo').value=p.usuario||'';$('rolActivo').value=p.rol||'Administrador'}
-function consecutivo(){return 'OT-'+String(registros.length+1).padStart(5,'0')}
-function limpiarFormulario(){document.getElementById('formOrden').reset();$('editId').value='';$('formTitle').textContent='Registrar instalación';$('btnGuardar').textContent='Guardar instalación';$('btnCancelar').classList.add('hidden');$('fecha').valueAsDate=new Date();fotoActual='';$('fotoPreview').innerHTML='';limpiarFirma();if($('usuarioActivo').value)$('tecnico').value=$('usuarioActivo').value}
-function leerFormulario(){const data={};campos.forEach(c=>data[c]=$(c).value.trim());data.orden=data.orden||consecutivo();data.id=$('editId').value||crypto.randomUUID();data.foto=fotoActual;data.firma=obtenerFirma();data.usuarioRegistro=$('usuarioActivo').value;data.rolRegistro=$('rolActivo').value;data.actualizado=new Date().toISOString();return data}
-function cargarFormulario(id){const r=registros.find(x=>x.id===id);if(!r)return;campos.forEach(c=>$(c).value=r[c]||'');$('editId').value=r.id;fotoActual=r.foto||'';$('fotoPreview').innerHTML=fotoActual?`<img src="${fotoActual}">`:'';cargarFirma(r.firma||'');$('formTitle').textContent='Editar instalación';$('btnGuardar').textContent='Actualizar instalación';$('btnCancelar').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
-function eliminar(id){if(!confirm('¿Eliminar esta orden?'))return;registros=registros.filter(x=>x.id!==id);guardarStorage();render()}
-function estadoClase(e){return(e||'').replaceAll(' ','-')}
-function aplicarFiltros(){const q=$('buscar').value.toLowerCase(),estado=$('filtroEstado').value,tipo=$('filtroTipo').value,desde=$('desde').value,hasta=$('hasta').value;return registros.filter(r=>{const texto=`${r.orden} ${r.tecnico} ${r.cedula} ${r.cliente} ${r.direccion} ${r.zona}`.toLowerCase();const fechaOk=(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta);return(!q||texto.includes(q))&&fechaOk&&(!estado||r.estado===estado)&&(!tipo||r.tipo===tipo)}).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))}
-function renderTabla(){const tabla=$('tabla'),data=aplicarFiltros();if(data.length===0){tabla.innerHTML='<tr><td colspan="10">No hay registros para mostrar.</td></tr>';return}tabla.innerHTML=data.map(r=>`<tr><td>${r.fecha||''} ${r.hora||''}</td><td>${r.orden||''}</td><td>${r.tecnico||''}</td><td>${r.cedula||''}</td><td>${r.cliente||''}<br><small>${r.telefono||''}</small></td><td>${r.tipo||''}</td><td><span class="badge ${estadoClase(r.estado)}">${r.estado||''}</span></td><td>${r.resultado||''}</td><td>${r.foto?'Foto ':''}${r.firma?'Firma':''}</td><td><div class="row-actions"><button onclick="verDetalle('${r.id}')">Ver</button><button onclick="cargarFormulario('${r.id}')">Editar</button><button class="danger" onclick="eliminar('${r.id}')">Borrar</button></div></td></tr>`).join('')}
-function contarPor(campo){const out={};registros.forEach(r=>{const k=r[campo]||'Sin dato';out[k]=(out[k]||0)+1});return out}
-function renderStats(){$('total').textContent=registros.length;$('instaladas').textContent=registros.filter(r=>r.estado==='Instalado').length;$('pendientes').textContent=registros.filter(r=>r.estado==='Pendiente').length;$('novedades').textContent=registros.filter(r=>r.estado==='Con novedad').length;$('canceladas').textContent=registros.filter(r=>r.estado==='Cancelado').length;const tipos=contarPor('tipo');const base=['FTTH Multipmexada','FTTH Overload','FTTH TV','Derivación'];$('resumenTipos').innerHTML=base.map(t=>`<div><strong>${tipos[t]||0}</strong><br>${t}</div>`).join('');const tec=contarPor('tecnico');$('resumenTecnicos').innerHTML=Object.entries(tec).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<div><strong>${n}</strong><br>${t}</div>`).join('')||'<div>Sin técnicos registrados</div>'}
-function render(){renderTabla();renderStats()}
-function descargarArchivo(contenido,nombre,tipo){const blob=new Blob([contenido],{type:tipo});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=nombre;a.click();URL.revokeObjectURL(url)}
-function exportarCSV(){if(registros.length===0){alert('No hay datos para exportar.');return}const headers=[...campos,'usuarioRegistro','rolRegistro'];const rows=aplicarFiltros().map(r=>headers.map(h=>`"${String(r[h]||'').replaceAll('"','""')}"`).join(','));const csv='\ufeff'+[headers.join(','),...rows].join('\n');descargarArchivo(csv,'reporte_instalaciones_ftth.csv','text/csv;charset=utf-8;')}
-function crearBackup(){descargarArchivo(JSON.stringify(registros,null,2),'respaldo_ftth.json','application/json')}
-function importarJson(file){const reader=new FileReader();reader.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error();registros=data;guardarStorage();render();alert('Respaldo importado correctamente.')}catch(err){alert('No se pudo importar el archivo JSON.')}};reader.readAsText(file)}
-function tomarGPS(){if(!navigator.geolocation){alert('GPS no disponible');return}navigator.geolocation.getCurrentPosition(pos=>{$('gps').value=pos.coords.latitude.toFixed(6)+', '+pos.coords.longitude.toFixed(6)},()=>alert('No se pudo obtener GPS'))}
-function procesarFoto(file){const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');const max=900;let w=img.width,h=img.height;if(w>h&&w>max){h*=max/w;w=max}else if(h>max){w*=max/h;h=max}canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);fotoActual=canvas.toDataURL('image/jpeg',0.75);$('fotoPreview').innerHTML=`<img src="${fotoActual}">`};img.src=e.target.result};reader.readAsDataURL(file)}
-const canvas=$('firmaCanvas'),ctx=canvas.getContext('2d');let dibujando=false;
-function pos(e){const r=canvas.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*(canvas.width/r.width),y:(p.clientY-r.top)*(canvas.height/r.height)}}
-function iniciar(e){dibujando=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}
-function mover(e){if(!dibujando)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();e.preventDefault()}
-function terminar(){dibujando=false}
+
+function save(){localStorage.setItem(STORAGE,JSON.stringify(ordenes))}
+function saveSession(){localStorage.setItem(SESSION,JSON.stringify(session))}
+function ordenAuto(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `FTTH-${y}${m}${day}-${String(ordenes.length+1).padStart(4,'0')}`}
+function showViews(){
+  $('loginView').classList.toggle('hidden',!!session);
+  $('btnSalir').classList.toggle('hidden',!session);
+  $('tecnicoView').classList.add('hidden');$('supervisorView').classList.add('hidden');
+  $('usuarioLabel').textContent=session?`${session.user} · ${session.rol}`:'';
+  if(!session)return;
+  if(session.rol==='Técnico')$('tecnicoView').classList.remove('hidden');
+  else $('supervisorView').classList.remove('hidden');
+  render();
+}
+function login(){const user=$('loginUser').value.trim();if(!user){alert('Digite usuario');return}session={user,rol:$('loginRol').value};saveSession();showViews()}
+function salir(){localStorage.removeItem(SESSION);session=null;showViews()}
+function crearOrdenRapida(){const ced=$('cedulaRapida').value.trim();if(!ced){alert('Digite la cédula');return}limpiarForm();$('formSection').classList.remove('hidden');$('orden').value=ordenAuto();$('fecha').valueAsDate=new Date();$('tecnico').value=session.user;$('cedula').value=ced;$('estado').value='En proceso';$('resultado').value='Sin cerrar';}
+function limpiarForm(){document.getElementById('ordenForm').reset();$('editId').value='';fotoActual='';firmaActual='';$('fotoPreview').innerHTML='';limpiarFirma()}
+function leerForm(){const d={};campos.forEach(c=>d[c]=$(c).value.trim());d.id=$('editId').value||crypto.randomUUID();d.foto=fotoActual;d.firma=obtenerFirma();d.actualizado=new Date().toISOString();return d}
+function guardarOrden(e){e.preventDefault();const d=leerForm();if(!d.tipo){alert('Seleccione tipo de instalación');return}if($('editId').value)ordenes=ordenes.map(o=>o.id===d.id?{...o,...d}:o);else ordenes.push(d);save();$('formSection').classList.add('hidden');$('cedulaRapida').value='';limpiarForm();render()}
+function editar(id){const r=ordenes.find(o=>o.id===id);if(!r)return;$('formSection').classList.remove('hidden');campos.forEach(c=>$(c).value=r[c]||'');$('editId').value=r.id;fotoActual=r.foto||'';firmaActual=r.firma||'';$('fotoPreview').innerHTML=fotoActual?`<img src="${fotoActual}">`:'';cargarFirma(firmaActual);window.scrollTo({top:0,behavior:'smooth'})}
+function borrar(id){if(!confirm('¿Borrar orden?'))return;ordenes=ordenes.filter(o=>o.id!==id);save();render()}
+function cls(e){return(e||'').replaceAll(' ','-')}
+function filtroOrdenes(){
+ const q=($('buscar')?.value||'').toLowerCase(), desde=$('desde')?.value||'', hasta=$('hasta')?.value||'', estado=$('filtroEstado')?.value||'', tipo=$('filtroTipo')?.value||'';
+ return ordenes.filter(r=>{
+  const txt=`${r.orden} ${r.tecnico} ${r.cedula} ${r.cliente} ${r.direccion}`.toLowerCase();
+  return (!q||txt.includes(q))&&(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta)&&(!estado||r.estado===estado)&&(!tipo||r.tipo===tipo)
+ }).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+}
+function renderTecnico(){
+ const data=ordenes.filter(o=>o.tecnico===session.user);
+ $('tablaTecnico').innerHTML=data.length?data.map(r=>`<tr><td>${r.fecha||''}</td><td>${r.orden||''}</td><td>${r.cedula||''}</td><td>${r.tipo||''}</td><td><span class="badge ${cls(r.estado)}">${r.estado||''}</span></td><td><div class="row-actions"><button onclick="ver('${r.id}')">Ver</button><button onclick="editar('${r.id}')">Editar</button></div></td></tr>`).join(''):'<tr><td colspan="6">Sin órdenes</td></tr>';
+}
+function renderSupervisor(){
+ const data=filtroOrdenes();
+ $('tablaSupervisor').innerHTML=data.length?data.map(r=>`<tr><td>${r.fecha||''}</td><td>${r.orden||''}</td><td>${r.tecnico||''}</td><td>${r.cedula||''}</td><td>${r.cliente||''}</td><td>${r.tipo||''}</td><td><span class="badge ${cls(r.estado)}">${r.estado||''}</span></td><td>${r.foto?'📷 ':''}${r.firma?'✍️':''}</td><td><div class="row-actions"><button onclick="ver('${r.id}')">Ver</button><button class="danger" onclick="borrar('${r.id}')">Borrar</button></div></td></tr>`).join(''):'<tr><td colspan="9">Sin órdenes</td></tr>';
+ $('total').textContent=ordenes.length;$('instaladas').textContent=ordenes.filter(o=>o.estado==='Instalado').length;$('proceso').textContent=ordenes.filter(o=>o.estado==='En proceso').length;$('novedades').textContent=ordenes.filter(o=>o.estado==='Con novedad').length;$('canceladas').textContent=ordenes.filter(o=>o.estado==='Cancelado').length;
+ resumen();
+}
+function contar(campo){const out={};ordenes.forEach(o=>{const k=o[campo]||'Sin dato';out[k]=(out[k]||0)+1});return out}
+function resumen(){const tec=contar('tecnico');$('resumenTecnicos').innerHTML=Object.entries(tec).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div><strong>${v}</strong>${k}</div>`).join('')||'<div>Sin datos</div>';const tipos=contar('tipo');const base=['FTTH Multipmexada','FTTH Overload','FTTH TV','Derivación'];$('resumenTipos').innerHTML=base.map(t=>`<div><strong>${tipos[t]||0}</strong>${t}</div>`).join('')}
+function render(){if(!session)return;if(session.rol==='Técnico')renderTecnico();else renderSupervisor()}
+function tomarGPS(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{$('gps').value=p.coords.latitude.toFixed(6)+', '+p.coords.longitude.toFixed(6)},()=>alert('No se pudo tomar GPS')):alert('GPS no disponible')}
+function foto(file){const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height,max=900;if(w>h&&w>max){h*=max/w;w=max}else if(h>max){w*=max/h;h=max}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);fotoActual=c.toDataURL('image/jpeg',0.75);$('fotoPreview').innerHTML=`<img src="${fotoActual}">`};img.src=e.target.result};reader.readAsDataURL(file)}
+const canvas=$('firmaCanvas'),ctx=canvas.getContext('2d');let draw=false;
+function pos(e){const r=canvas.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*(canvas.width/r.width),y:(p.clientY-r.top)*(canvas.height/r.height)}}
+function start(e){draw=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}
+function move(e){if(!draw)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();e.preventDefault()}
+function end(){draw=false}
 function limpiarFirma(){ctx.clearRect(0,0,canvas.width,canvas.height)}
 function obtenerFirma(){return canvas.toDataURL('image/png')}
 function cargarFirma(data){limpiarFirma();if(!data)return;const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,canvas.width,canvas.height);img.src=data}
-function verDetalle(id){const r=registros.find(x=>x.id===id);if(!r)return;const html=`<h2>Reporte de orden ${r.orden||''}</h2><div class="detail-grid">${campos.map(c=>`<div><strong>${c}</strong><br>${r[c]||''}</div>`).join('')}</div><h3>Evidencias</h3>${r.foto?`<p>Foto:</p><img class="report-img" src="${r.foto}">`:''}${r.firma?`<p>Firma:</p><img class="report-img" src="${r.firma}">`:''}<div class="actions"><button onclick="window.print()">Imprimir esta orden</button></div>`;$('detalleOrden').innerHTML=html;$('modal').classList.remove('hidden')}
-$('formOrden').addEventListener('submit',e=>{e.preventDefault();const data=leerFormulario();if($('editId').value){registros=registros.map(r=>r.id===data.id?{...r,...data}:r)}else{registros.push(data)}guardarStorage();limpiarFormulario();render()});
-$('btnCancelar').addEventListener('click',limpiarFormulario);$('btnCSV').addEventListener('click',exportarCSV);$('btnBackup').addEventListener('click',crearBackup);$('btnPrint').addEventListener('click',()=>window.print());$('btnGuardarPerfil').addEventListener('click',guardarPerfil);$('btnGPS').addEventListener('click',tomarGPS);$('btnLimpiarFirma').addEventListener('click',limpiarFirma);$('cerrarModal').addEventListener('click',()=>$('modal').classList.add('hidden'));
-$('importJson').addEventListener('change',e=>{if(e.target.files[0])importarJson(e.target.files[0])});$('fotoInput').addEventListener('change',e=>{if(e.target.files[0])procesarFoto(e.target.files[0])});
-$('btnLimpiar').addEventListener('click',()=>{if(confirm('¿Seguro que desea borrar todos los registros?')){registros=[];guardarStorage();render()}});['buscar','desde','hasta','filtroEstado','filtroTipo'].forEach(id=>$(id).addEventListener('input',renderTabla));
-['mousedown','touchstart'].forEach(ev=>canvas.addEventListener(ev,iniciar));['mousemove','touchmove'].forEach(ev=>canvas.addEventListener(ev,mover));['mouseup','mouseleave','touchend'].forEach(ev=>canvas.addEventListener(ev,terminar));
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('btnInstall').classList.remove('hidden')});$('btnInstall').addEventListener('click',async()=>{if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;$('btnInstall').classList.add('hidden')}});
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
-cargarPerfil();limpiarFormulario();render();
+function ver(id){const r=ordenes.find(o=>o.id===id);if(!r)return;$('detalleOrden').innerHTML=`<h2>Orden ${r.orden}</h2><div class="detail-grid">${campos.map(c=>`<div><strong>${c}</strong><br>${r[c]||''}</div>`).join('')}</div><h3>Evidencias</h3>${r.foto?`<p>Foto</p><img class="report-img" src="${r.foto}">`:''}${r.firma?`<p>Firma</p><img class="report-img" src="${r.firma}">`:''}<div class="actions"><button onclick="window.print()">Imprimir</button></div>`;$('modal').classList.remove('hidden')}
+function descargar(contenido,nombre,tipo){const b=new Blob([contenido],{type:tipo});const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=nombre;a.click();URL.revokeObjectURL(u)}
+function limpiarTexto(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function excel(){
+ const headers=[
+  ['fecha','Fecha'],['hora','Hora'],['orden','Orden'],['tecnico','Técnico'],['cedula','Cédula'],
+  ['cliente','Cliente'],['telefono','Teléfono'],['direccion','Dirección'],['zona','Zona'],
+  ['tipo','Tipo instalación'],['estado','Estado'],['resultado','Resultado técnico'],
+  ['serial','Serial ONU'],['mac','MAC'],['potencia','Potencia RX'],['puerto','Puerto OLT/PON'],
+  ['cto','CTO/Caja'],['puertoCto','Puerto CTO'],['fibra','Metros fibra'],['gps','GPS'],
+  ['observaciones','Observaciones'],['foto','Tiene foto'],['firma','Tiene firma']
+ ];
+ const data=filtroOrdenes();
+ let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>';
+ headers.forEach(h=>html+=`<th>${h[1]}</th>`);
+ html+='</tr></thead><tbody>';
+ data.forEach(r=>{
+   html+='<tr>';
+   headers.forEach(([key])=>{
+     let val='';
+     if(key==='foto') val=r.foto?'Sí':'No';
+     else if(key==='firma') val=r.firma?'Sí':'No';
+     else val=r[key]||'';
+     html+=`<td>${limpiarTexto(val)}</td>`;
+   });
+   html+='</tr>';
+ });
+ html+='</tbody></table></body></html>';
+ descargar(html,'reporte_ftth_empresa.xls','application/vnd.ms-excel;charset=utf-8;');
+}
+function backup(){descargar(JSON.stringify(ordenes,null,2),'respaldo_ftth_empresa.json','application/json')}
+function importar(file){const rd=new FileReader();rd.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error();ordenes=data;save();render();alert('Importado correctamente')}catch{alert('Archivo inválido')}};rd.readAsText(file)}
+$('btnLogin').onclick=login;$('btnSalir').onclick=salir;$('btnCrearOrden').onclick=crearOrdenRapida;$('ordenForm').onsubmit=guardarOrden;$('btnCancelar').onclick=()=>{$('formSection').classList.add('hidden');limpiarForm()};$('btnGPS').onclick=tomarGPS;$('fotoInput').onchange=e=>{if(e.target.files[0])foto(e.target.files[0])};$('btnLimpiarFirma').onclick=limpiarFirma;$('cerrarModal').onclick=()=>$('modal').classList.add('hidden');
+['mousedown','touchstart'].forEach(ev=>canvas.addEventListener(ev,start));['mousemove','touchmove'].forEach(ev=>canvas.addEventListener(ev,move));['mouseup','mouseleave','touchend'].forEach(ev=>canvas.addEventListener(ev,end));
+['buscar','desde','hasta','filtroEstado','filtroTipo'].forEach(id=>$(id)?.addEventListener('input',render));
+$('btnExcel')?.addEventListener('click',excel);$('btnBackup')?.addEventListener('click',backup);$('importJson')?.addEventListener('change',e=>{if(e.target.files[0])importar(e.target.files[0])});
+showViews();
