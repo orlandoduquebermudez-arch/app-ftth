@@ -23,17 +23,10 @@
 <main class="layout">
 <section id="loginView" class="card login-card">
   <h2>Ingreso al sistema</h2>
-  <label>Correo <input id="loginUser" type="email" placeholder="usuario@cablenext.com"></label>
-  <label>Contraseña <input id="loginPass" type="password" placeholder="Contraseña"></label>
-  <label>Rol
-    <select id="loginRol">
-      <option>Técnico</option>
-      <option>Supervisor</option>
-      <option>Administrador</option>
-    </select>
-  </label>
+  <label>Correo <input id="loginEmail" type="email" placeholder="ej: lomelin@cablenext.com" autocomplete="username"></label>
+  <label>Contraseña <input id="loginPassword" type="password" placeholder="Contraseña" autocomplete="current-password"></label>
   <button id="btnLogin">Entrar</button>
-  <p class="hint">Conectado a Firebase: las órdenes se guardan en la nube.</p>
+  <p class="hint">Ingreso con Firebase Authentication. El rol se lee desde Firestore, colección usuarios.</p>
 </section>
 
 <section id="tecnicoView" class="hidden">
