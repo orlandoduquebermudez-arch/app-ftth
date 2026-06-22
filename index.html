@@ -23,7 +23,8 @@
 <main class="layout">
 <section id="loginView" class="card login-card">
   <h2>Ingreso al sistema</h2>
-  <label>Usuario <input id="loginUser" placeholder="Ej: tecnico1"></label>
+  <label>Correo <input id="loginUser" type="email" placeholder="usuario@cablenext.com"></label>
+  <label>Contraseña <input id="loginPass" type="password" placeholder="Contraseña"></label>
   <label>Rol
     <select id="loginRol">
       <option>Técnico</option>
@@ -32,7 +33,7 @@
     </select>
   </label>
   <button id="btnLogin">Entrar</button>
-  <p class="hint">Versión local. En la versión con Firebase/MySQL aquí irá usuario y contraseña reales.</p>
+  <p class="hint">Conectado a Firebase: las órdenes se guardan en la nube.</p>
 </section>
 
 <section id="tecnicoView" class="hidden">
@@ -187,6 +188,9 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
