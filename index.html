@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema FTTH PWA</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1264d8">
+</head>
+<body>
+<header class="topbar">
+<div><h1>Sistema FTTH PWA</h1><p>Control de instalaciones, técnicos, evidencias y reportes.</p></div>
+<div class="top-actions">
+<button id="btnInstall" class="secondary hidden">Instalar App</button>
+<button id="btnBackup" class="secondary">Respaldo JSON</button>
+<label class="import-btn">Importar JSON <input type="file" id="importJson" accept=".json" hidden></label>
+<button id="btnPrint" class="secondary">Imprimir</button>
+</div>
+</header>
+<main class="layout">
+<section class="card"><h2>Perfil de uso</h2><div class="grid small-grid">
+<label>Usuario / Técnico activo <input id="usuarioActivo" placeholder="Nombre del técnico o administrador"></label>
+<label>Rol<select id="rolActivo"><option>Administrador</option><option>Técnico</option><option>Supervisor</option></select></label>
+<button id="btnGuardarPerfil">Guardar perfil</button>
+</div></section>
+<section class="card form-card"><h2 id="formTitle">Registrar instalación</h2><form id="formOrden"><input type="hidden" id="editId">
+<div class="grid">
+<label>Fecha <input type="date" id="fecha" required></label><label>Hora <input type="time" id="hora"></label><label>Número de orden <input type="text" id="orden" placeholder="Automático si se deja vacío"></label><label>Técnico <input type="text" id="tecnico" required></label>
+<label>Cédula del usuario <input type="text" id="cedula" required></label><label>Nombre del usuario <input type="text" id="cliente"></label><label>Teléfono <input type="tel" id="telefono"></label><label>Dirección <input type="text" id="direccion"></label>
+<label>Barrio / Zona <input type="text" id="zona"></label><label>Tipo de instalación<select id="tipo" required><option value="">Seleccione...</option><option>FTTH Multipmexada</option><option>FTTH Overload</option><option>FTTH TV</option><option>Derivación</option></select></label>
+<label>Estado<select id="estado" required><option>Pendiente</option><option>En proceso</option><option>Instalado</option><option>Reagendado</option><option>Cancelado</option><option>Con novedad</option></select></label>
+<label>Resultado técnico<select id="resultado"><option>Sin cerrar</option><option>Servicio activo</option><option>Cliente ausente</option><option>Falta señal</option><option>Falta material</option><option>Problema de ruta</option><option>No autoriza instalación</option></select></label>
+<label>Serial ONU / Equipo <input type="text" id="serial"></label><label>MAC equipo <input type="text" id="mac"></label><label>Potencia óptica RX <input type="text" id="potencia" placeholder="-20.5 dBm"></label><label>Puerto OLT / PON <input type="text" id="puerto"></label>
+<label>CTO / Caja <input type="text" id="cto"></label><label>Puerto CTO <input type="text" id="puertoCto"></label><label>Plan / Servicio <input type="text" id="plan"></label><label>Metros de fibra usados <input type="number" id="fibra" min="0"></label>
+<label>Conectores usados <input type="number" id="conectores" min="0"></label><label>Drop usado <input type="text" id="drop"></label><label>Coordenadas GPS <input type="text" id="gps" placeholder="Latitud, Longitud"></label><button type="button" id="btnGPS" class="secondary">Tomar GPS</button>
+</div>
+<label>Observaciones / Novedades<textarea id="observaciones" rows="3"></textarea></label>
+<div class="evidence-grid"><div><label>Evidencia fotográfica<input type="file" id="fotoInput" accept="image/*" capture="environment"></label><div id="fotoPreview" class="preview"></div></div><div><label>Firma del usuario</label><canvas id="firmaCanvas" width="420" height="180"></canvas><div class="actions"><button type="button" id="btnLimpiarFirma" class="secondary">Limpiar firma</button></div></div></div>
+<div class="actions"><button type="submit" id="btnGuardar">Guardar instalación</button><button type="button" id="btnCancelar" class="secondary hidden">Cancelar edición</button></div>
+</form></section>
+<section class="card"><h2>Indicadores generales</h2><div class="stats"><div><strong id="total">0</strong><span>Total</span></div><div><strong id="instaladas">0</strong><span>Instaladas</span></div><div><strong id="pendientes">0</strong><span>Pendientes</span></div><div><strong id="novedades">0</strong><span>Con novedad</span></div><div><strong id="canceladas">0</strong><span>Canceladas</span></div></div></section>
+<section class="card table-card"><div class="table-header"><h2>Órdenes registradas</h2><div class="buttons"><button id="btnCSV" class="secondary">Exportar Excel/CSV</button><button id="btnLimpiar" class="danger">Borrar todo</button></div></div>
+<div class="filters"><input id="buscar" placeholder="Buscar por orden, técnico, cédula, cliente o dirección"><input type="date" id="desde"><input type="date" id="hasta"><select id="filtroEstado"><option value="">Todos los estados</option><option>Pendiente</option><option>En proceso</option><option>Instalado</option><option>Reagendado</option><option>Cancelado</option><option>Con novedad</option></select><select id="filtroTipo"><option value="">Todos los tipos</option><option>FTTH Multipmexada</option><option>FTTH Overload</option><option>FTTH TV</option><option>Derivación</option></select></div>
+<div class="responsive-table"><table><thead><tr><th>Fecha</th><th>Orden</th><th>Técnico</th><th>Cédula</th><th>Usuario</th><th>Tipo</th><th>Estado</th><th>Resultado</th><th>Evidencia</th><th>Acciones</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
+<section class="reports"><div class="card"><h2>Resumen por tipo</h2><div id="resumenTipos" class="summary"></div></div><div class="card"><h2>Resumen por técnico</h2><div id="resumenTecnicos" class="summary"></div></div></section>
+</main>
+<div id="modal" class="modal hidden"><div class="modal-content"><button id="cerrarModal" class="danger close">Cerrar</button><div id="detalleOrden"></div></div></div>
+<script src="app.js"></script>
+</body></html>
