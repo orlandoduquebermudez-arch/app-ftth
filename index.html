@@ -7,6 +7,10 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b5ed7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FTTH Cable">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <header class="topbar">
@@ -16,6 +20,7 @@
   </div>
   <div class="top-actions">
     <span id="usuarioLabel"></span>
+    <button id="btnInstalar" class="secondary hidden">Instalar app</button>
     <button id="btnSalir" class="secondary hidden">Salir</button>
   </div>
 </header>
@@ -198,6 +203,36 @@
     <div id="detalleOrden"></div>
   </div>
 </div>
+
+<script>
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  const btn = document.getElementById('btnInstalar');
+  if (btn) btn.classList.remove('hidden');
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btnInstalar');
+  if (btn) btn.classList.add('hidden');
+  deferredInstallPrompt = null;
+});
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btnInstalar');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return alert('Si no aparece la instalación, use el menú del navegador y seleccione "Agregar a pantalla principal".');
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      btn.classList.add('hidden');
+    });
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.error('Service Worker error:', err));
+  }
+});
+</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
