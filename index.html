@@ -90,17 +90,32 @@
         <label>Puerto CTO <input id="puertoCto"></label>
         <label>Metros fibra <input id="fibra" type="number" min="0"></label>
         <label>GPS <input id="gps" readonly></label>
-        <button type="button" id="btnGPS" class="secondary">Tomar GPS</button>
+        <input type="hidden" id="lat">
+        <input type="hidden" id="lng">
+        <input type="hidden" id="gpsFecha">
+        <button type="button" id="btnGPS" class="secondary">Tomar / actualizar GPS</button>
       </div>
 
       <label>Observaciones <textarea id="observaciones" rows="3"></textarea></label>
 
-      <div class="evidence-grid">
-        <div>
-          <label>Foto evidencia <input type="file" id="fotoInput" accept="image/*" capture="environment"></label>
-          <div id="fotoPreview" class="preview"></div>
+      <div class="evidence-grid evidence-grid-wide">
+        <div class="evidence-card">
+          <label>Foto ONU instalada <input type="file" id="fotoOnuInput" accept="image/*" capture="environment"></label>
+          <div id="fotoOnuPreview" class="preview"></div>
         </div>
-        <div>
+        <div class="evidence-card">
+          <label>Foto potencia óptica <input type="file" id="fotoPotenciaInput" accept="image/*" capture="environment"></label>
+          <div id="fotoPotenciaPreview" class="preview"></div>
+        </div>
+        <div class="evidence-card">
+          <label>Foto CTO / Caja <input type="file" id="fotoCtoInput" accept="image/*" capture="environment"></label>
+          <div id="fotoCtoPreview" class="preview"></div>
+        </div>
+        <div class="evidence-card">
+          <label>Foto instalación final <input type="file" id="fotoFinalInput" accept="image/*" capture="environment"></label>
+          <div id="fotoFinalPreview" class="preview"></div>
+        </div>
+        <div class="evidence-card signature-card">
           <label>Firma del usuario</label>
           <canvas id="firmaCanvas" width="420" height="180"></canvas>
           <button type="button" id="btnLimpiarFirma" class="secondary">Limpiar firma</button>
