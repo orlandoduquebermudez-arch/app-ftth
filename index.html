@@ -3,24 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FTTH Empresa v1</title>
+<title>FTTH Empresa v2</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b5ed7">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FTTH Cable">
-<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <header class="topbar">
   <div>
-    <h1>FTTH Empresa v1</h1>
-    <p>20 técnicos · Órdenes por cédula · Panel supervisor</p>
+    <h1>FTTH Empresa v2</h1>
+    <p>Órdenes FTTH · Inventario · Bodegas por técnico</p>
   </div>
   <div class="top-actions">
     <span id="usuarioLabel"></span>
-    <button id="btnInstalar" class="secondary hidden">Instalar app</button>
     <button id="btnSalir" class="secondary hidden">Salir</button>
   </div>
 </header>
@@ -95,32 +90,17 @@
         <label>Puerto CTO <input id="puertoCto"></label>
         <label>Metros fibra <input id="fibra" type="number" min="0"></label>
         <label>GPS <input id="gps" readonly></label>
-        <input type="hidden" id="lat">
-        <input type="hidden" id="lng">
-        <input type="hidden" id="gpsFecha">
-        <button type="button" id="btnGPS" class="secondary">Tomar / actualizar GPS</button>
+        <button type="button" id="btnGPS" class="secondary">Tomar GPS</button>
       </div>
 
       <label>Observaciones <textarea id="observaciones" rows="3"></textarea></label>
 
-      <div class="evidence-grid evidence-grid-wide">
-        <div class="evidence-card">
-          <label>Foto ONU instalada <input type="file" id="fotoOnuInput" accept="image/*" capture="environment"></label>
-          <div id="fotoOnuPreview" class="preview"></div>
+      <div class="evidence-grid">
+        <div>
+          <label>Foto evidencia <input type="file" id="fotoInput" accept="image/*" capture="environment"></label>
+          <div id="fotoPreview" class="preview"></div>
         </div>
-        <div class="evidence-card">
-          <label>Foto potencia óptica <input type="file" id="fotoPotenciaInput" accept="image/*" capture="environment"></label>
-          <div id="fotoPotenciaPreview" class="preview"></div>
-        </div>
-        <div class="evidence-card">
-          <label>Foto CTO / Caja <input type="file" id="fotoCtoInput" accept="image/*" capture="environment"></label>
-          <div id="fotoCtoPreview" class="preview"></div>
-        </div>
-        <div class="evidence-card">
-          <label>Foto instalación final <input type="file" id="fotoFinalInput" accept="image/*" capture="environment"></label>
-          <div id="fotoFinalPreview" class="preview"></div>
-        </div>
-        <div class="evidence-card signature-card">
+        <div>
           <label>Firma del usuario</label>
           <canvas id="firmaCanvas" width="420" height="180"></canvas>
           <button type="button" id="btnLimpiarFirma" class="secondary">Limpiar firma</button>
@@ -132,6 +112,17 @@
         <button type="button" id="btnCancelar" class="secondary">Cancelar</button>
       </div>
     </form>
+  </section>
+
+  <section class="card">
+    <h2>Mi bodega</h2>
+    <p class="hint">Material disponible asignado a tu usuario.</p>
+    <div class="responsive-table">
+      <table>
+        <thead><tr><th>Código</th><th>Material</th><th>Unidad</th><th>Cantidad</th></tr></thead>
+        <tbody id="tablaMiBodega"></tbody>
+      </table>
+    </div>
   </section>
 
   <section class="card">
@@ -170,9 +161,6 @@
       <input id="buscar" placeholder="Buscar por técnico, cédula, orden o cliente">
       <input type="date" id="desde">
       <input type="date" id="hasta">
-      <select id="filtroTecnico">
-        <option value="">Todos los técnicos</option>
-      </select>
       <select id="filtroEstado">
         <option value="">Todos los estados</option>
         <option>En proceso</option><option>Instalado</option><option>Con novedad</option><option>Reagendado</option><option>Cancelado</option>
@@ -190,6 +178,78 @@
     </div>
   </section>
 
+
+  <section class="card">
+    <h2>Inventario - Fase 1</h2>
+    <p class="hint">Administra bodega principal, entrega material a técnicos y consulta bodegas actualizadas.</p>
+
+    <div class="inventory-grid">
+      <form id="materialForm" class="subcard">
+        <h3>Cargar material a bodega principal</h3>
+        <label>Código del material <input id="matCodigo" placeholder="Ej: ONU-HUAWEI" required></label>
+        <label>Nombre del material <input id="matNombre" placeholder="Ej: ONU Huawei" required></label>
+        <label>Unidad
+          <select id="matUnidad">
+            <option>Unidad</option>
+            <option>Metro</option>
+            <option>Rollo</option>
+            <option>Caja</option>
+          </select>
+        </label>
+        <label>Stock mínimo <input id="matMinimo" type="number" min="0" value="0"></label>
+        <label>Cantidad a cargar <input id="matCantidad" type="number" min="0" step="1" value="0"></label>
+        <button type="submit">Guardar material</button>
+      </form>
+
+      <form id="entregaForm" class="subcard">
+        <h3>Entregar material a técnico</h3>
+        <label>Técnico
+          <select id="entregaTecnico" required>
+            <option value="">Seleccione técnico...</option>
+          </select>
+        </label>
+        <label>Material
+          <select id="entregaMaterial" required>
+            <option value="">Seleccione material...</option>
+          </select>
+        </label>
+        <label>Cantidad <input id="entregaCantidad" type="number" min="1" step="1" required></label>
+        <button type="submit">Entregar material</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="reports inventory-reports">
+    <div class="card">
+      <h2>Bodega principal</h2>
+      <div class="responsive-table">
+        <table>
+          <thead><tr><th>Código</th><th>Material</th><th>Unidad</th><th>Disponible</th><th>Mínimo</th><th>Estado</th></tr></thead>
+          <tbody id="tablaBodegaPrincipal"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Bodegas de técnicos</h2>
+      <div class="responsive-table">
+        <table>
+          <thead><tr><th>Técnico</th><th>Código</th><th>Material</th><th>Unidad</th><th>Cantidad</th></tr></thead>
+          <tbody id="tablaBodegasTecnicos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Movimientos de inventario</h2>
+    <div class="responsive-table">
+      <table>
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Material</th><th>Cantidad</th><th>Origen</th><th>Destino</th><th>Usuario</th></tr></thead>
+        <tbody id="tablaMovimientos"></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="reports">
     <div class="card"><h2>Resumen por técnico</h2><div id="resumenTecnicos" class="summary"></div></div>
     <div class="card"><h2>Resumen por tipo</h2><div id="resumenTipos" class="summary"></div></div>
@@ -203,36 +263,6 @@
     <div id="detalleOrden"></div>
   </div>
 </div>
-
-<script>
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  const btn = document.getElementById('btnInstalar');
-  if (btn) btn.classList.remove('hidden');
-});
-window.addEventListener('appinstalled', () => {
-  const btn = document.getElementById('btnInstalar');
-  if (btn) btn.classList.add('hidden');
-  deferredInstallPrompt = null;
-});
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('btnInstalar');
-  if (btn) {
-    btn.addEventListener('click', async () => {
-      if (!deferredInstallPrompt) return alert('Si no aparece la instalación, use el menú del navegador y seleccione "Agregar a pantalla principal".');
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      btn.classList.add('hidden');
-    });
-  }
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.error('Service Worker error:', err));
-  }
-});
-</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
