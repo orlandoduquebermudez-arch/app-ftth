@@ -260,45 +260,9 @@ function excel(){
 }
 function backup(){descargar(JSON.stringify(ordenes,null,2),'respaldo_ftth_empresa.json','application/json')}
 async function importar(file){const rd=new FileReader();rd.onload=async e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error();const batch=db.batch();data.forEach(o=>{const id=o.id||ordenesRef.doc().id;const ref=ordenesRef.doc(id);delete o.id;batch.set(ref,o,{merge:true})});await batch.commit();alert('Importado correctamente')}catch{alert('Archivo inválido')}};rd.readAsText(file)}
-$('btnLogin')?.addEventListener('click', login);
-$('btnSalir')?.addEventListener('click', salir);
-$('btnCrearOrden')?.addEventListener('click', crearOrdenRapida);
-$('ordenForm')?.addEventListener('submit', guardarOrden);
-
-$('btnCancelar')?.addEventListener('click', () => {
-  $('formSection')?.classList.add('hidden');
-  limpiarForm();
-});
-
-$('btnGPS')?.addEventListener('click', tomarGPS);
-
-$('fotoInput')?.addEventListener('change', e => {
-  if (e.target.files[0]) foto(e.target.files[0]);
-});
-
-$('btnLimpiarFirma')?.addEventListener('click', limpiarFirma);
-$('cerrarModal')?.addEventListener('click', () => $('modal')?.classList.add('hidden'));
-
-$('btnExcel')?.addEventListener('click', excel);
-$('btnBackup')?.addEventListener('click', backup);
-
-$('importJson')?.addEventListener('change', e => {
-  if (e.target.files[0]) importar(e.target.files[0]);
-});
-
-$('materialForm')?.addEventListener('submit', guardarMaterial);
-$('entregaForm')?.addEventListener('submit', entregarMaterialTecnico);
-
-['buscar','desde','hasta','filtroEstado','filtroTipo','filtroTecnico'].forEach(id => {
-  $(id)?.addEventListener('input', render);
-});
-
-auth.onAuthStateChanged(user => {
-  if (user) cargarPerfil(user);
-  else {
-    session = null;
-    ordenes = [];
-    if (unsubscribeOrdenes) unsubscribeOrdenes();
-    showViews();
-  }
-});
+$('btnLogin').onclick=login;$('btnSalir').onclick=salir;$('btnCrearOrden').onclick=crearOrdenRapida;$('ordenForm').onsubmit=guardarOrden;$('btnCancelar').onclick=()=>{$('formSection').classList.add('hidden');limpiarForm()};$('btnGPS').onclick=tomarGPS;$('fotoInput').onchange=e=>{if(e.target.files[0])foto(e.target.files[0])};$('btnLimpiarFirma').onclick=limpiarFirma;$('cerrarModal').onclick=()=>$('modal').classList.add('hidden');
+['mousedown','touchstart'].forEach(ev=>canvas.addEventListener(ev,start));['mousemove','touchmove'].forEach(ev=>canvas.addEventListener(ev,move));['mouseup','mouseleave','touchend'].forEach(ev=>canvas.addEventListener(ev,end));
+['buscar','desde','hasta','filtroEstado','filtroTipo'].forEach(id=>$(id)?.addEventListener('input',render));
+$('btnExcel')?.addEventListener('click',excel);$('btnBackup')?.addEventListener('click',backup);$('importJson')?.addEventListener('change',e=>{if(e.target.files[0])importar(e.target.files[0])});
+$('materialForm')?.addEventListener('submit',guardarMaterialInventario);$('entregaForm')?.addEventListener('submit',entregarMaterialTecnico);
+auth.onAuthStateChanged(user=>{ if(user) cargarPerfil(user); else {session=null; ordenes=[]; if(unsubscribeOrdenes) unsubscribeOrdenes(); unsubscribeInventario.forEach(fn=>fn&&fn()); unsubscribeInventario=[]; materiales=[]; bodegaPrincipal=[]; bodegasTecnicos=[]; movimientosInventario=[]; usuarios=[]; showViews();} });
