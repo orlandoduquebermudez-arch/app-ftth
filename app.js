@@ -266,3 +266,12 @@ $('btnLogin').onclick=login;$('btnSalir').onclick=salir;$('btnCrearOrden').oncli
 $('btnExcel')?.addEventListener('click',excel);$('btnBackup')?.addEventListener('click',backup);$('importJson')?.addEventListener('change',e=>{if(e.target.files[0])importar(e.target.files[0])});
 $('materialForm')?.addEventListener('submit',guardarMaterialInventario);$('entregaForm')?.addEventListener('submit',entregarMaterialTecnico);
 auth.onAuthStateChanged(user=>{ if(user) cargarPerfil(user); else {session=null; ordenes=[]; if(unsubscribeOrdenes) unsubscribeOrdenes(); unsubscribeInventario.forEach(fn=>fn&&fn()); unsubscribeInventario=[]; materiales=[]; bodegaPrincipal=[]; bodegasTecnicos=[]; movimientosInventario=[]; usuarios=[]; showViews();} });
+// =============================
+// Dashboard V2 - Navegación
+// =============================
+
+function mostrarModulo(modulo){
+
+    alert("Módulo seleccionado: " + modulo);
+
+}
