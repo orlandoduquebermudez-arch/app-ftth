@@ -271,6 +271,23 @@ auth.onAuthStateChanged(user=>{ if(user) cargarPerfil(user); else {session=null;
 
 function mostrarModulo(modulo){
 
-    alert("Módulo seleccionado: " + modulo);
+  const mapa = {
+    dashboard: 'dashboardModulo',
+    ordenes: 'ordenesModulo',
+    inventario: 'inventarioModulo'
+  };
 
+  const destino = document.getElementById(mapa[modulo]);
+
+  if(!destino){
+    alert('Todavía no existe el módulo: ' + modulo);
+    return;
+  }
+
+  ['dashboardModulo','ordenesModulo','inventarioModulo'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.add('hidden');
+  });
+
+  destino.classList.remove('hidden');
 }
