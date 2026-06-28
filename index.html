@@ -16,6 +16,7 @@
     <p>Órdenes FTTH · Inventario · Bodegas por técnico</p>
   </div>
   <div class="top-actions">
+  
     <span id="usuarioLabel"></span>
     <button id="btnSalir" class="secondary hidden">Salir</button>
   </div>
@@ -37,6 +38,33 @@
 </aside>
 
 <div class="content">
+  <section id="dashboardModulo">
+
+    <div class="card">
+        <h2>Dashboard</h2>
+
+        <div class="stats">
+
+            <div>
+                <strong id="dashOrdenes">0</strong>
+                <span>Órdenes</span>
+            </div>
+
+            <div>
+                <strong id="dashTecnicos">0</strong>
+                <span>Técnicos</span>
+            </div>
+
+            <div>
+                <strong id="dashMateriales">0</strong>
+                <span>Materiales</span>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 <section id="loginView" class="card login-card">
   <h2>Ingreso al sistema</h2>
   <label>Correo <input id="loginEmail" type="email" placeholder="ej: lomelin@cablenext.com" autocomplete="username"></label>
@@ -153,6 +181,7 @@
 </section>
 
 <section id="supervisorView" class="hidden">
+  <section id="ordenesModulo">
   <section class="card">
     <h2>Panel supervisor</h2>
     <div class="stats">
